@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Simulator Elevator{% endblock %}
+
+{% block body %}
+<style>
+    .simulator-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+    .simulator-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+    .simulator-wrapper .content {
+        display: flex;
+    }
+    .simulator-wrapper .content .elevator {
+        border: 1px solid #000;
+        flex-basis: 30%;
+    }
+    .simulator-wrapper .content .elevator td, .simulator-wrapper .content .elevator h2 {
+        text-align: center;
+    }
+</style>
+
+<div class="simulator-wrapper">
+    <h1>Simulation result:</h1>
+
+    <div class="content">
+        {% for elevator in simulation %}
+        <div class="elevator">
+            <h2>{{ elevator.name }}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Current position</th>
+                        <th>Total changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for currentTrack in elevator.track %}
+                    <tr>
+                        <td>{{ currentTrack.time }}</td>
+                        <td>{{ currentTrack.currentFloor }}</td>
+                        <td>{{ currentTrack.totalFloors }}</td>
+                    </tr>
+                    {% endfor %}
+                <tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

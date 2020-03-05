@@ -42,46 +42,64 @@ class Simulation
         $elevators = $this->_elevators;
         $currentTime = new \DateTime($this->_simulator->from());
         $to = new \DateTime($this->_simulator->to());
-        $interval = \DateInterval::createFromDateString($this->_simulator->interval() . ' minute');
+        $interval = \DateInterval::createFromDateString($this->_simulator->interval() . ' minutes');
 
         for ($currentTime; $currentTime <= $to; $currentTime->add($interval)) {
-            $this->_checkSequences($currentTime);
+
+            foreach($elevators as $keyElevator => $elevator) {
+                $newTrack = $this->_addTrack($keyElevator, $currentTime);
+                $this->_elevators[$keyElevator]->addTrack($newTrack);
+            }
         }
 
         return $this->_elevators;
     }
 
-    protected function _checkSequences(\DateTime $currentTime) {
+    protected function _addTrack($keyElevator, \DateTime $currentTime): Track
+    {
+        $currentTimeFormatted = $currentTime->format('H:i');
+        $lastTrack = $this->_elevators[$keyElevator]->getLastTrack();
+
+        if (empty($lastTrack)) {
+            $currentFloor = 0;
+            $totalFloor = 0;
+        } else {
+            $currentFloor = $lastTrack->currentFloor();
+            $totalFloor = $lastTrack->totalFloors();
+        }
+
+        $newTrack = new Track($currentTimeFormatted, $currentFloor, $totalFloor);
+
         foreach($this->_sequences as $sequence) {
-            $this->_checkSequence($currentTime, $sequence);
-        }
-    }
+            $startTime = new \DateTime($sequence->startTime());
+            $endTime = new \DateTime($sequence->endTime());
+            $interval = \DateInterval::createFromDateString($sequence->interval() . ' minutes');
 
-    protected function _checkSequence(\DateTime $currentTime, Sequence $sequence) {
-        $startTime = new \DateTime($sequence->startTime());
-        $endTime = new \DateTime($sequence->endTime());
-        $interval = \DateInterval::createFromDateString($sequence->interval() . ' minute');
-        $sequenceTime = $startTime;
+            for ($sequenceTime = $startTime; $sequenceTime <= $currentTime; $sequenceTime->add($interval)) {
+                if ($sequenceTime == $currentTime) {
 
-        if ($currentTime < $startTime || $currentTime > $endTime) {
-            return null;
-        }
+                    $sequenceFrom = $sequence->from();
+                    $sequenceTo = $sequence->to();
+                    $floorsMoved = 0;
+                    $waste = 0;
+                    $modifyTrack = false;
+                    if (in_array($currentFloor, $sequenceFrom)) {
+                        $modifyTrack = true;
+                        if (isset($sequenceTo[$keyElevator])) {
+                            $to = $sequenceTo[$keyElevator];
+                            $floorsMoved += abs($currentFloor - $sequenceTo[$keyElevator]);
+                        } else {
+                            $to = $sequenceTo[0];
+                            $floorsMoved += abs($currentFloor - $sequenceTo[0]);
+                        }
 
-        for ($sequenceTime; $sequenceTime <= $currentTime; $sequenceTime->add($interval)) {
-            if ($sequenceTime == $currentTime) {
-                $this->_addTrack($sequenceTime, $sequence);
+                        $waste = $totalFloor + $floorsMoved;
+                        $newTrack = new Track($currentTimeFormatted, $to, $waste);
+
+                    }
+                }
             }
         }
+        return $newTrack;
     }
-
-    protected function _addTrack(\DateTime $currentTime, Sequence $sequence) {
-        foreach($this->_elevators as $keyElevator => $elevator) {
-            $currentTimeFormatted = $currentTime->format('H:i');
-            $lastTrack = $elevator->getLastTrack();
-            $track = new Track($currentTimeFormatted, $sequence->from()[0], $sequence->to()[0]);
-            $this->_elevators[$keyElevator]->addTrack($track);
-        }
-    }
-
-
 }

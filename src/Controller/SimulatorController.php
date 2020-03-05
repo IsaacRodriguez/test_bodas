@@ -32,7 +32,7 @@ class SimulatorController extends AbstractController
         $this->_elevators[] = new Elevator('Elevator 2');
         $this->_elevators[] = new Elevator('Elevator 3');
 
-        $this->_simulator = new Simulator('09:00', '20:00', 1);
+        $this->_simulator = new Simulator('9:00', '20:00', 1);
 
         $simulation = new Simulation($this->_simulator, $this->_elevators, $this->_sequences);
 
